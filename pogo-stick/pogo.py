@@ -49,7 +49,7 @@ def hopper_system(state, u):
 def control_law(state):
     """Simple control law to apply an upward force when the spring is compressed."""
     if state[0] <= L0:
-        return 250.0 
+        return 250.0
     return 0.0
 
 init_state = jnp.array([y0, v0])
@@ -65,6 +65,8 @@ diff = jax.jit(jax.vmap(jax.jacobian(hopper_system)))(s, u)
 
 print(out.shape)
 
+def backward_pass(state, input):
+    
 
 # --- Simulation loop ---
 # We use a loop to handle the multiple phases (aerial and ground contact).
@@ -81,7 +83,7 @@ while t0 < t_span[1]:
     def dynamical_system(t, state):
         u = control_law(t, state)
         return hopper_system(t, state, u)
-    
+
     sol = solve_ivp(
         dynamical_system,
         (t0, t_span[1]),
@@ -89,7 +91,7 @@ while t0 < t_span[1]:
         events=ground_impact,
         max_step=0.01  # Maximum time step for accuracy
     )
-    
+
     # Append results from this phase
     time_history = jnp.concatenate((time_history, sol.t))
     position_history = jnp.concatenate((position_history, sol.y[0]))
@@ -155,7 +157,7 @@ def f(state, u):
 def kappa(state):
     """Simple control law to apply an upward force when the spring is compressed."""
     if state[0] <= L0:
-        return 50.0  
+        return 50.0
     return 0.0
 
 # %% [markdown]
@@ -164,29 +166,29 @@ def kappa(state):
 # %%
 def simulate_discrete(dt=0.001, t_max=10.0):
     """Discrete simulation with explicit Euler integration."""
-    
+
     # Initialize
     t = 0.0
     y = y0
     v = v0
-    
+
     # Storage
     time_hist = [t]
     pos_hist = [y]
     vel_hist = [v]
-    
+
     while t < t_max:
 
         u = kappa([y, v])
 
         y, v = jnp.array([y, v]) + f([y, v], u)*dt
         t += dt
-        
+
         # Store
         time_hist.append(t)
         pos_hist.append(y)
         vel_hist.append(v)
-    
+
     return jnp.array(time_hist), jnp.array(pos_hist), jnp.array(vel_hist)
 
 # %%
@@ -215,8 +217,10 @@ plt.show()
 # Animate hopper system
 
 # %%
-import matplotlib.animation as animation
 import os
+
+import matplotlib.animation as animation
+
 
 def animate(x_hist,
             save_path="animations/hopper_bounce.gif",
@@ -266,8 +270,8 @@ def animate(x_hist,
     frames = range(0, len(time_hist), frame_skip)
 
     anim = animation.FuncAnimation(
-        fig, 
-        animate, 
+        fig,
+        animate,
         frames=frames,
         interval=1000/fps,  # 50ms between frames = 20 FPS
         blit=True,
@@ -293,8 +297,9 @@ animate(x_hist, save_path="animations/hopper_bounce.gif",fps=20)
 # Try MPC
 
 # %%
-from pyparsing import Dict
 import casadi as ca
+from pyparsing import Dict
+
 
 class MPC:
 
@@ -341,19 +346,19 @@ class MPC:
         for k in range(N):
             self.opti.subject_to(u_constraints(self.U[:,k]) >= 0)
 
-            
+
         # define objective function
         self.opti.minimize(sum(J(self.X[:,k], self.U[:,k]) for k in range(N)))
 
 
         # tell the opti container we want to use IPOPT to optimize, and define settings for the solver
         opts = {
-            'ipopt.print_level':0, 
+            'ipopt.print_level':0,
             'print_time':0,
             'ipopt.tol': 1e-6,
         } # silence!
         self.opti.solver('ipopt', opts)
-            
+
         # perform the solve
         sol = self.opti.solve()
 
@@ -372,7 +377,7 @@ class MPC:
         u_warm_start = jnp.hstack([old_u_sol, old_u_sol[:,-1:]]) # stack final u solution onto the end again for next warm start
 
         self.opti.set_initial(self.X[:,1:], x_warm_start)
-        self.opti.set_initial(self.U[:,:], u_warm_start) 
+        self.opti.set_initial(self.U[:,:], u_warm_start)
 
         # perform the solve
         sol = self.opti.solve()
@@ -382,10 +387,10 @@ class MPC:
 
         # return first input to be used
         return self.u_sol[:,0]
-    
+
     def get_predictions(self):
         return self.opti.value(self.X), self.opti.value(self.U)
-    
+
 
 # %%
 def f(state, u):
@@ -395,7 +400,7 @@ def f(state, u):
 
     # Force calculation
     force_gravity = -m * g
-    
+
     # Use CasADi conditional functions instead of Python if statements
     compression = L0 - y
     force_spring = ca.if_else(y <= L0, k * compression, 0.0)
@@ -412,13 +417,13 @@ def f(state, u):
 def J(x, u):
     """CasADi-compatible cost function."""
     y_ref = 2.0
-    
+
     # Use scalar operations instead of matrix operations
     position_cost = 10.0 * x[0]**2
     velocity_cost = 0.0 * x[1]**2
     reference_cost = (x[0] - y_ref)**2
     control_cost = 0.1 * u[0]**2
-    
+
     return position_cost + velocity_cost + reference_cost + control_cost
 x_constraints = lambda x: ca.vertcat(x[0]-0.0, 10.0 - x[0], x[1]+10.0, 10.0 - x[1])
 u_constraints = lambda u: ca.vertcat(u[0]-0.0, 100.0 - u[0])
@@ -440,5 +445,3 @@ mpc = MPC(
 )
 
 mpc(np.array([3.0, 0.0]))
-
-

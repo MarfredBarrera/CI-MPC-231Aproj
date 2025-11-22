@@ -5,12 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "casadi>=3.7.2",
-    "ipykernel>=7.1.0",
-    "jax>=0.8.0",
-    "jupyterlab>=4.4.10",
-    "matplotlib>=3.10.7",
-    "numpy>=2.3.4",
-    "pyparsing>=3.2.5",
-    "scipy>=1.16.3",
+    "jax[cuda12]",
+    "matplotlib",
+    "tqdm"
 ]
