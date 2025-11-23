@@ -2,7 +2,6 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from jax import custom_vjp
-from tqdm import tqdm
 from functools import partial
 # ==========================================
 # 0. CONFIGURATION
@@ -15,14 +14,15 @@ class Config:
     # n_u = 1 (control dimension)
     # n_c = 1 (contact dimension)
 
-    m = jax.numpy.array(2.0)  # Scalar mass
+    m = jax.numpy.array(1.0)  # Scalar mass
     g = 9.81
     dt = 0.025
-    rho = 1.0 # constraint relaxation parameter used in gradient of contact forces (lambda)
-    B_fn = lambda self, phi: (jax.nn.sigmoid(-100.0 * phi)+0.1) * jnp.eye(1)
+    rho = 2.0 # constraint relaxation parameter used in gradient of contact forces (lambda)
+    B_fn = lambda self, phi: (jax.nn.sigmoid(-100.0 * phi)+0.01) * jnp.eye(1)
+    # Have B be a function of state (phi = height from ground). However, for convergence purposes, give the controller a small amt (1%) of control to prevent it from getting stuck.
 
-    u_max = 10.0
-    u_min = -10.0
+    u_max = 500.0
+    u_min = -1.0
 
     W_x = jnp.array([100.0, 5.0])  # (n_x,) -> (2,) State weights
     W_u = jnp.array([1e-3])        # (n_u,) -> (1,) Control weights
@@ -132,6 +132,12 @@ def solve_lcp_pgs(A, b, max_iter=50):
     Generalized for multi-contact (A is matrix, b is vector).
     """
     n = b.shape[0]
+    
+    # Optimization for scalar case to avoid scan overhead
+    if n == 1:
+        val = -b[0] / (A[0, 0] + 1e-8)
+        return jnp.array([jnp.maximum(0.0, val)])
+
     lambda_init = jnp.zeros_like(b)
     
     def iteration(lam, _):
@@ -393,7 +399,7 @@ def calculate_merit(x_traj, u_traj, defects, x_refs, u_refs, air_weights):
     infeasibility = jnp.sum(jnp.abs(defects))
     return cost_total + cfg.mu_defect * infeasibility, cost_total
 
-@partial(jax.jit, static_argnums=(6,))
+# @partial(jax.jit, static_argnums=(6,))
 def solve_fddp(x0, x_traj_guess, u_traj_guess, x_refs, u_refs, air_weights, max_iter):
     """
     Main FDDP Loop.
@@ -440,10 +446,9 @@ def solve_fddp(x0, x_traj_guess, u_traj_guess, x_refs, u_refs, air_weights, max_
 # 4. SIMULATION
 # ==========================================
 
-def run_mpc_simulation():
+def run_mpc_simulation(N_steps):
     N = cfg.N_horizon
     x_current = jnp.array([1.0, 0.0]) # Initial State: Height 0m, Velocity 0
-    # Start from standing position so contact is active (same in paper)
     u_traj = jnp.zeros((N,1))
     
     # Initial guess: just rollout zero control
@@ -453,49 +458,65 @@ def run_mpc_simulation():
 
     x_refs = jnp.tile(jnp.array([1.5, 0.0]), (N+1, 1)) # Target: 1.5m
     u_refs = jnp.tile(jnp.array([0.0]), (N, 1))
-
-    time_on_ground = 0
-    threshold_time = 12 
-
-    sim_data = {'x': [x_current], 'u': [], 'cost': []}
-    print("Simulating MPC...")
-
-    for t in tqdm(range(150)): # Run for 150 steps
+    
+    # Carry state: (x_curr, x_traj, u_traj, time_on_ground_float)
+    init_carry = (x_current, x_traj, u_traj, 0.0)
+    
+    def sim_step(carry, t):
+        x_curr, x_tr, u_tr, tog = carry
+        
         # Heuristic to encourage flight phases (Air Time Cost)
-        if x_current[0] < 0.05:
-            time_on_ground += 1
-        else:
-            time_on_ground = 0
-            
-        current_air_weight = cfg.W_air if time_on_ground > threshold_time else 0.0
+        # JIT-compatible logic
+        is_ground = x_curr[0] < 0.05
+        tog_next = jnp.where(is_ground, tog + 1.0, 0.0)
+        
+        threshold_time = 12.0
+        current_air_weight = jnp.where(tog_next > threshold_time, cfg.W_air, 0.0)
         air_weights = jnp.ones((N,)) * current_air_weight
-
+        
         # Solve MPC
-        x_traj, u_traj = solve_fddp(x_current, x_traj, u_traj, x_refs, u_refs, air_weights, cfg.max_iter_mpc)
-
+        x_tr_opt, u_tr_opt = solve_fddp(x_curr, x_tr, u_tr, x_refs, u_refs, air_weights, cfg.max_iter_mpc)
+        
         # Apply Control
-        u_applied = u_traj[0]
-        x_next = step_cimpc(x_current, u_applied)
-
-        # Log
-        sim_data['x'].append(x_next)
-        sim_data['u'].append(jnp.array(u_applied).flatten())
-        sim_data['cost'].append(total_cost(x_traj, u_traj, x_refs, u_refs, air_weights))
-
+        u_applied = u_tr_opt[0]
+        x_next = step_cimpc(x_curr, u_applied)
+        
+        # Compute Cost for logging
+        current_cost = total_cost(x_tr_opt, u_tr_opt, x_refs, u_refs, air_weights)
+        
         # Warm Start Shift
-        u_traj = jnp.roll(u_traj, -1, axis=0).at[-1].set(0.0)
-        x_traj = jnp.roll(x_traj, -1, axis=0)
-        x_term_guess = step_cimpc(x_traj[-2], 0.0)
-        x_traj = x_traj.at[-1].set(x_term_guess)
-        x_current = x_next
-        x_traj = x_traj.at[0].set(x_current)
-    return sim_data
+        u_tr_next = jnp.roll(u_tr_opt, -1, axis=0).at[-1].set(0.0)
+        x_tr_next = jnp.roll(x_tr_opt, -1, axis=0)
+        
+        # Get new terminal guess
+        x_term_guess = step_cimpc(x_tr_next[-2], 0.0)
+        x_tr_next = x_tr_next.at[-1].set(x_term_guess)
+        x_tr_next = x_tr_next.at[0].set(x_next) # Set first state to new current
+        
+        new_carry = (x_next, x_tr_next, u_tr_next, tog_next)
+        # Output: x_next, u_applied, cost
+        return new_carry, (x_next, u_applied, current_cost)
+
+    final_carry, (x_hist, u_hist, cost_hist) = jax.lax.scan(sim_step, init_carry, jnp.arange(N_steps))
+    
+    # Prepend initial state to x_hist to match original structure
+    x_hist_full = jnp.vstack([x_current.reshape(1, -1), x_hist])
+    
+    return x_hist_full, u_hist, cost_hist    
 
 # ==========================================
 # 5. PLOTTING
 # ==========================================
 if __name__ == "__main__":
-    data = run_mpc_simulation()
+    run_fast_jit = jax.jit(run_mpc_simulation, static_argnums=(0,))
+    
+    x_hist, u_hist, cost_hist = run_fast_jit(150)
+    
+    data = {
+        'x': x_hist,
+        'u': u_hist,
+        'cost': cost_hist
+    }
     x_hist = jnp.array(data['x'])
     u_hist = jnp.array(data['u']).flatten()
     t_axis = jnp.arange(len(x_hist)) * cfg.dt
