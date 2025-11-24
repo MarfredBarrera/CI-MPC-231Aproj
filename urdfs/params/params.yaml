@@ -1,0 +1,357 @@
+# This yaml for Real Robot EXPERIMENT !!!
+# walking (mu = 0.6) & handstanding (mu = 0.5) for both, raisim mu 0.8
+
+weight_pos_xy : 20.0 # // world frame pos
+weight_pos_z : 80.0
+weight_rot_xy : 10.0
+weight_rot_z : 10.0 # // 이것도 world frame 기준인갑네
+weight_pos_joint : 1 #2.0
+
+weight_vel_xy : 35 #30 #35 #25 // tuning parameter for overall d gain
+
+#weight_vel_xy : 4e-2 #1e-1 #2e-2 #2e-2 // tuning parameter for overall d gain
+weight_vel_z : 1e-1      # not use
+weight_vel_rot_xy : 2e-2 # not use
+weight_vel_rot_z : 2e-2  # not use
+weight_vel_joint : 1e-2  # not use
+
+descend : 0.1
+ascend : 2.0
+#short_horizon : 1
+#short_on : true
+
+# (u,D,ref_x) => (3e-4,30,0.25) , (2e-4,30,0.25) , (1e-4,35,0.30 : quite unstable)
+weight_u : 3e-4 #2e-4 #2e-4 #5e-5 #3e-4 #5e-5
+#1e-4 #5e-5 #2e-5 #5e-6 (unstable, but onc hitting -> go handstanding)
+#3e-4 #2.5e-4 #2e-4 #2e-4 #1e-3
+weight_u_smoothness : 1e1 # weight_u / weight_u_smoothness # not yet implemented
+weight_final : 10 #5.0
+
+rho : 2e0 #1e-1
+rho_separating : 5e-2 #1e-2
+relaxation_mode : 0 # 0 : relaxation only contact, 1 : relaxation for separating and contact, -1 : test _ simple gradient model but not exact
+reg_init : 1e-3 #1e-3 # reg_min : 1e-9 # reg_factor : 10.0
+
+weight_foot_slip : 1e0 #1e0 #5e-1 # NOW, ONLY TANGENTIAL WITH LW_ALIGNED # 요거 고치는데 주력하장
+sig_foot_slip :  30 #30 #100
+weight_foot_clearance : 0 # 얘는 효과 잘 안보이네
+sig_foot_clearance : -50
+
+weight_foot_airtime : 0 #2e3 #2e3 # preventing too long swing phase
+weight_air_cut : 12 # 0.025 * 15
+weight_air_dur : 3 #
+
+weight_sym_u_trotting : 0 #1e-2
+weight_sym_u_pacing : 0 #2e-2
+#weight_sym_vel_trotting : 0
+#weight_sym_vel_bounding : 0
+
+simulation_point : 25 # 1 : same with MPC model, 25 : 1ms integration using Raisim
+control_mode : 6 # 6 for crocoddyl & raisin_hound -> 2 easily diverge in real robot, 7 for handstanding
+delayed : 0 # 0 : not delayed, 1 : state delayed update
+delayed_ms : 18 #25 # 25ms delay, with delay compensation # for real robot -> avg 18 ms (no execution of raisim), 25 ms (execution raisim)
+
+wbc_dynamics : 1000
+wbc_foot_contact : 100
+wbc_foot_swing : 100 #40
+wbc_trunk : 0 #10 #10
+wbc_reg_u : 100 #5e-1
+wbc_reg_lambda : 0 #1e-2
+wbc_P_gain_foot_swing : 2000
+wbc_D_gain_foot_swing : 60
+
+plotting : 0
+
+# 50,1 for control_mode 2 (25ms PD ref update)
+# 100, 2 for control_mode 1 (1ms PD ref update)
+P_gain : 60 #60 #60 #30
+D_gain : 4 #4 #2 #4
+task_P_gain : 1500 #1500 #2000.0
+task_D_gain : 20.0
+
+MPC_TO : 0 # 0 for MPC, 1 for TO, 2 for PD test
+horizon :  20 #15 # 30 for dt 0.01
+initial_MAXITER : 6 #6 # initial 많이 안 줘도 잘 되는 구낭
+mpc_MAXITER : 4 # for analyzing : 20, for real time : 4
+num_of_iteration : 5000
+
+ref_x : 0.0 #25 #30 #30 #30 #30 #0.30 #25
+ref_y : 0.0
+ref_z : 0.1 #1
+ref_rot_x : 0.0 # -0.5 _ 5.0 sec
+ref_rot_y : 0.6 # 0.8 _ 5.0 sec # 0.6 _ 3.5 sec
+ref_rot_z : 0.0 #2.0
+
+time_for_handstanding : 3.5 # (pitch 0.8, 5 sec), (pitch 0.6, 3.5 sec)
+sliding_ext_force_norm : 0 #80
+
+vel_tracking : 0
+world_frame_vel : 0
+
+height : 0.51875 # for foot 0.036
+roll   : 0.05 #0.15  # 0.05
+pitch  : 0.7854 #0.65  # 0.7854
+
+vel_x : 0.0
+vel_y : 0.0
+vel_z : 0.0
+vel_rot_x : 0.0
+vel_rot_y : 0.0
+vel_rot_z : 0.0
+
+random_rot : 0 # num for random rot seed, 0 for just set des value from here
+
+# ver steady cost
+#weight_pos_xy : 20.0
+#weight_pos_z : 120.0
+#weight_rot_xy : 15.0
+#weight_rot_z : 15.0
+#weight_pos_joint : 2.0
+
+#weight_vel_xy : 2e-2 #5e-2
+#weight_vel_z : 2e-2 #2e-2
+#weight_vel_rot_xy : 8e-3 #2e-2
+#weight_vel_rot_z : 8e-3 #1e-3
+#weight_vel_joint : 8e-3 #1e-2
+#
+#weight_u : 2e-4 #1e-6
+#weight_final : 10 #5.0
+#
+#rho : 1e0 #2e0 #5e-2
+#rho_separating : 1e-1 #1e-2
+#relaxation_mode : 1 # 0 : relaxation only contact, 1 : relaxation for separating and contact
+#reg_init : 1e-1 # reg_min : 1e-9
+#
+## now, not used, first check the contact-implicit.hxx
+#weight_foot_slip : 0 #2e-2 #2e-1
+#weight_foot_clearance : 0 #1e1 #1e1 # (4 times of weight_pos_joint)
+#weight_foot_lambda : 0 #2e-4 #8e-3
+#
+#simulation_point : 20 # 1 : same with MPC model, 25 : 1ms integration using Raisim
+#control_mode : 4
+## 0: ff, 1: +PD, 2: +PD with des vel zero, 3: SFC des_x[1], 4: SFC des_x[0], 5: SFC -gain des_x[1], 6: SFC -gain des_x[0]
+#
+#P_gain : 500.0
+#D_gain : 5.0
+#
+#MPC_TO : 0 # 0 for MPC, 1 for TO
+#horizon :  15
+#initial_MAXITER : 10 #6 # initial 많이 안 줘도 잘 되는 구낭
+#mpc_MAXITER : 10
+#num_of_iteration : 400
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### highlight _ ver 2
+#weight_pos_xy : 0.0
+#weight_pos_z : 100.0
+#weight_rot_xy : 20.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 2.0
+#
+#weight_vel_xy : 2e-2
+#weight_vel_z : 2e-2
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 1e-3
+#weight_vel_joint : 1e-2
+#
+#weight_u : 1e-6
+#
+#weight_final : 5.0
+#horizon : 15
+#rho : 5e-2
+#reg_init : 1e-9 # reg_min : 1e-9
+
+
+### comparison
+#weight_pos_xy : 10.0
+#weight_pos_z : 100.0
+#weight_rot_xy : 10.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 2.0
+
+#weight_vel_xy : 2e-2
+#weight_vel_z : 2e-2
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 2e-2
+#weight_vel_joint : 1e-2
+
+#weight_final : 5.0
+#horizon : 25
+#rho : 5e-2
+#reg_init : 1e-9 # reg_min : 1e-9
+
+
+
+### for beauty
+#weight_pos_xy : 0.0
+#weight_pos_z : 120.0
+#weight_rot_xy : 20.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 5.0
+#
+#weight_vel_xy : 5e-2
+#weight_vel_z : 2e-2
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 1e-3
+#weight_vel_joint : 1e-2
+#
+#
+#weight_u : 1e-6
+#
+#weight_final : 1.0
+#horizon : 20
+#rho : 5e-2
+#reg_init : 1e-9 # reg_min : 1e-9
+
+
+
+#weight_pos_xy : 10.0
+#weight_pos_z : 120.0
+#weight_rot_xy : 20.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 5.0
+#
+#weight_vel_xy : 1e-1
+#weight_vel_z : 1e-1
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 2e-2
+#weight_vel_joint : 2e-2
+#
+#weight_u : 1e-5
+
+
+# for previous contact model, stable and easy to tune
+#weight_pos_xy : 30.0
+#weight_pos_z : 150.0
+#weight_rot_xy : 20.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 5.0
+#
+#weight_vel_xy : 2e-2
+#weight_vel_z : 2e-2
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 1e-3
+#weight_vel_joint : 1e-2
+
+#weight_u : 1e-8
+#
+#weight_final : 5.0
+#horizon : 30
+#rho : 1e-1
+#reg_init : 1e-9 # reg_min : 1e-9
+
+# for drift compensation model, quite hard to tune
+# 이게 맞는 걸 수 있겠다
+
+#### for long horizon
+#weight_pos_xy : 10.0
+#weight_pos_z : 100.0
+#weight_rot_xy : 10.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 2.0
+#
+#weight_vel_xy : 2e-1
+#weight_vel_z : 2e-1
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 2e-2
+#weight_vel_joint : 1e-2
+#
+#weight_u : 1e-6
+#
+#weight_final : 1.0
+#horizon : 25
+#rho : 5e-2
+#reg_init : 1e-9 # reg_min : 1e-9
+
+## for beauty
+#weight_pos_xy : 2.5
+#weight_pos_z : 10.0
+#weight_rot_xy : 2.0
+#weight_rot_z : 2.0
+#weight_pos_joint : 0.5
+#
+#weight_vel_xy : 1e-1
+#weight_vel_z : 1e-1
+#weight_vel_rot_xy : 1e-1
+#weight_vel_rot_z : 1e-1
+#weight_vel_joint : 1e-2
+
+#weight_u : 1e-6
+#
+#weight_final : 5.0
+#horizon : 20
+#rho : 1e-1 # 5e-2
+#reg_init : 1e-9 # reg_min : 1e-9
+
+
+#######################################################
+########################### before 20220115 ###########
+
+#weight_pos_xy : 10.0
+#weight_pos_z : 120.0
+#weight_rot_xy : 20.0
+#weight_rot_z : 10.0
+#weight_pos_joint : 5.0
+#
+#weight_vel_xy : 5e-2
+#weight_vel_z : 2e-2
+#weight_vel_rot_xy : 2e-2
+#weight_vel_rot_z : 1e-3
+#weight_vel_joint : 1e-2
+#
+#weight_u : 2e-4 #1e-6
+#
+#weight_foot_slip : 1e-1
+#weight_foot_clearance : 5e1
+#weight_foot_lambda : 1e-3
+#
+#weight_final : 5 #5.0
+#rho : 1e-1 #5e-2
+##reg_init : 1e-9 # reg_min : 1e-9
+#reg_init : 1e-1 # reg_min : 1e-9
+#
+#simulation_point : 25 # 1 : same with MPC model, 25 : 1ms integration using Raisim
+#control_mode : 2
+## 0: ff, 1: +PD, 2: +PD with des vel zero, 3: SFC, 4: SFC body 0, 5: SFC vel 0
+#
+#P_gain : 500.0
+#D_gain : 5.0
+#task_P_gain : 2000.0 # Not yet implemented (*4 of joint PD)
+#task_D_gain : 20.0   # Not yet implemented (*4 of joint PD)
+#
+#MPC_TO : 0 # 0 for MPC, 1 for TO
+#horizon : 15
+#initial_MAXITER : 10 #6 # initial 많이 안 줘도 잘 되는 구낭
+#mpc_MAXITER : 6
+#num_of_iteration : 400
+
+#####################################################
+#####################################################

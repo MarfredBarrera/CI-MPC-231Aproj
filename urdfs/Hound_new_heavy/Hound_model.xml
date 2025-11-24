@@ -1,0 +1,85 @@
+<mujoco model="Hound_description">
+  <compiler angle="radian"/>
+
+  <worldbody>
+    <geom size="0.281 0.0925 0.04" type="box" rgba="0.913725 0.913725 0.847059 1"/>
+    <body name="RR_shoulder" pos="-0.349 -0.1 0">
+      <inertial pos="-0.00426027 -0.0132542 9.18e-06" quat="0.502942 0.494732 -0.508336 0.493846" mass="4.2947" diaginertia="0.0104353 0.00932098 0.00773167"/>
+      <joint name="RR_roll_joint" pos="0 0 0" axis="1 0 0" range="-1.48353 1.48353" actuatorfrcrange="-200 200"/>
+      <geom size="0.0605 0.0665" pos="0 -0.0125 0" quat="0.707107 0.707107 0 0" type="cylinder" rgba="0.2 0.2 0.2 1"/>
+      <body name="RR_thigh" pos="0 -0.1135 0">
+        <inertial pos="0.0135346 0.0187918 -0.0963899" quat="0.948323 0.037606 0.0826854 -0.304027" mass="1.6351" diaginertia="0.0245766 0.0230389 0.00245813"/>
+        <joint name="RR_hip_joint" pos="0 0 0" axis="0 1 0" range="-6.28319 6.28319" actuatorfrcrange="-200 200"/>
+        <geom size="0.039 0.0345 0.17" pos="0 0 -0.16395" type="box" rgba="0.2 0.2 0.2 1"/>
+        <body name="RR_calf" pos="0 0 -0.3279">
+          <inertial pos="0 -5.64383e-05 -0.17302" quat="1 -7.81616e-05 1.3905e-05 3.87362e-05" mass="0.933132" diaginertia="0.0213855 0.0213844 0.000525212"/>
+          <joint name="RR_knee_joint" pos="0 0 0" axis="0 1 0" range="-2.79253 2.79253" actuatorfrcrange="-400 400"/>
+          <geom size="0.016 0.016 0.175" pos="0 0 -0.175" type="box" rgba="0.913725 0.913725 0.847059 1"/>
+          <geom size="0.036" pos="0 0 -0.35"/>
+        </body>
+      </body>
+    </body>
+    <body name="RL_shoulder" pos="-0.349 0.1 0">
+      <inertial pos="-0.00426027 0.0132542 9.18e-06" quat="0.494732 0.502942 -0.493846 0.508336" mass="4.2947" diaginertia="0.0104353 0.00932098 0.00773167"/>
+      <joint name="RL_roll_joint" pos="0 0 0" axis="1 0 0" range="-1.48353 1.48353" actuatorfrcrange="-200 200"/>
+      <geom size="0.0605 0.0665" pos="0 0.0125 0" quat="0.707107 0.707107 0 0" type="cylinder" rgba="0.2 0.2 0.2 1"/>
+      <body name="RL_thigh" pos="0 0.1135 0">
+        <inertial pos="0.0135346 -0.0187918 -0.0963899" quat="0.948323 -0.037606 0.0826854 0.304027" mass="1.6351" diaginertia="0.0245766 0.0230389 0.00245813"/>
+        <joint name="RL_hip_joint" pos="0 0 0" axis="0 1 0" range="-6.28319 6.28319" actuatorfrcrange="-200 200"/>
+        <geom size="0.039 0.0345 0.17" pos="0 0 -0.16395" type="box" rgba="0.2 0.2 0.2 1"/>
+        <body name="RL_calf" pos="0 0 -0.3279">
+          <inertial pos="0 5.64383e-05 -0.17302" quat="1 7.81616e-05 1.3905e-05 -3.87362e-05" mass="0.933132" diaginertia="0.0213855 0.0213844 0.000525212"/>
+          <joint name="RL_knee_joint" pos="0 0 0" axis="0 1 0" range="-2.79253 2.79253" actuatorfrcrange="-400 400"/>
+          <geom size="0.016 0.016 0.175" pos="0 0 -0.175" type="box" rgba="0.913725 0.913725 0.847059 1"/>
+          <geom size="0.036" pos="0 0 -0.35"/>
+        </body>
+      </body>
+    </body>
+    <body name="FR_shoulder" pos="0.349 -0.1 0">
+      <inertial pos="-0.00426027 -0.0132542 9.18e-06" quat="0.502942 0.494732 -0.508336 0.493846" mass="4.2947" diaginertia="0.0104353 0.00932098 0.00773167"/>
+      <joint name="FR_roll_joint" pos="0 0 0" axis="1 0 0" range="-1.48353 1.48353" actuatorfrcrange="-200 200"/>
+      <geom size="0.0605 0.0665" pos="0 -0.0125 0" quat="0.707107 0.707107 0 0" type="cylinder" rgba="0.2 0.2 0.2 1"/>
+      <body name="FR_thigh" pos="0 -0.1135 0">
+        <inertial pos="0.0135346 0.0187918 -0.0963899" quat="0.948323 0.037606 0.0826854 -0.304027" mass="1.6351" diaginertia="0.0245766 0.0230389 0.00245813"/>
+        <joint name="FR_hip_joint" pos="0 0 0" axis="0 1 0" range="-6.28319 6.28319" actuatorfrcrange="-200 200"/>
+        <geom size="0.039 0.0345 0.17" pos="0 0 -0.16395" type="box" rgba="0.2 0.2 0.2 1"/>
+        <body name="FR_calf" pos="0 0 -0.3279">
+          <inertial pos="0 -5.64383e-05 -0.17302" quat="1 -7.81616e-05 1.3905e-05 3.87362e-05" mass="0.933132" diaginertia="0.0213855 0.0213844 0.000525212"/>
+          <joint name="FR_knee_joint" pos="0 0 0" axis="0 1 0" range="-2.79253 2.79253" actuatorfrcrange="-400 400"/>
+          <geom size="0.016 0.016 0.175" pos="0 0 -0.175" type="box" rgba="0.913725 0.913725 0.847059 1"/>
+          <geom size="0.036" pos="0 0 -0.35"/>
+        </body>
+      </body>
+    </body>
+    <body name="FL_shoulder" pos="0.349 0.1 0">
+      <inertial pos="-0.00426027 0.0132542 9.18e-06" quat="0.494732 0.502942 -0.493846 0.508336" mass="4.2947" diaginertia="0.0104353 0.00932098 0.00773167"/>
+      <joint name="FL_roll_joint" pos="0 0 0" axis="1 0 0" range="-1.48353 1.48353" actuatorfrcrange="-200 200"/>
+      <geom size="0.0605 0.0665" pos="0 0.0125 0" quat="0.707107 0.707107 0 0" type="cylinder" rgba="0.2 0.2 0.2 1"/>
+      <body name="FL_thigh" pos="0 0.1135 0">
+        <inertial pos="0.0135346 -0.0187918 -0.0963899" quat="0.948323 -0.037606 0.0826854 0.304027" mass="1.6351" diaginertia="0.0245766 0.0230389 0.00245813"/>
+        <joint name="FL_hip_joint" pos="0 0 0" axis="0 1 0" range="-6.28319 6.28319" actuatorfrcrange="-200 200"/>
+        <geom size="0.039 0.0345 0.17" pos="0 0 -0.16395" type="box" rgba="0.2 0.2 0.2 1"/>
+        <body name="FL_calf" pos="0 0 -0.3279">
+          <inertial pos="0 5.64383e-05 -0.17302" quat="1 7.81616e-05 1.3905e-05 -3.87362e-05" mass="0.933132" diaginertia="0.0213855 0.0213844 0.000525212"/>
+          <joint name="FL_knee_joint" pos="0 0 0" axis="0 1 0" range="-2.79253 2.79253" actuatorfrcrange="-400 400"/>
+          <geom size="0.016 0.016 0.175" pos="0 0 -0.175" type="box" rgba="0.913725 0.913725 0.847059 1"/>
+          <geom size="0.036" pos="0 0 -0.35"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor name="RR_roll"  joint="RR_roll_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="RR_hip"   joint="RR_hip_joint"  gear="25" ctrlrange="-1 1"/>
+    <motor name="RR_knee"  joint="RR_knee_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="RL_roll"  joint="RL_roll_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="RL_hip"   joint="RL_hip_joint"  gear="25" ctrlrange="-1 1"/>
+    <motor name="RL_knee"  joint="RL_knee_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="FR_roll"  joint="FR_roll_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="FR_hip"   joint="FR_hip_joint"  gear="25" ctrlrange="-1 1"/>
+    <motor name="FR_knee"  joint="FR_knee_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="FL_roll"  joint="FL_roll_joint" gear="25" ctrlrange="-1 1"/>
+    <motor name="FL_hip"   joint="FL_hip_joint"  gear="25" ctrlrange="-1 1"/>
+    <motor name="FL_knee"  joint="FL_knee_joint" gear="25" ctrlrange="-1 1"/>
+  </actuator>
+</mujoco>
