@@ -27,7 +27,6 @@ from mujoco import mjx
 
 # print("Conversion complete! Open 'hound_converted.xml' to edit.")
 
-
 class UrdfEnv(PipelineEnv):
     def __init__(self, xml_path, backend="mjx", **kwargs):
         # Load URDF to MjModel
@@ -59,6 +58,19 @@ class UrdfEnv(PipelineEnv):
         return state.replace(pipeline_state=pipeline_state)
 
 
+mj_model = mujoco.MjModel.from_xml_path(path)
+
+# PATCH: Convert all Cylinders (5) to Capsules (3)
+# Iterate over all geometries
+for i in range(mj_model.ngeom):
+    # If the geometry type is Cylinder (5)
+    if mj_model.geom_type[i] == mujoco.mjtGeom.mjGEOM_CYLINDER:
+        print(f"Converting geom {i} from CYLINDER to CAPSULE to fix MJX crash.")
+        mj_model.geom_type[i] = mujoco.mjtGeom.mjGEOM_CAPSULE
+
+mjx_model = mjx.put_model(mj_model)
+
+
 # Usage
 env = UrdfEnv(path)
 reset_fn = jax.jit(env.reset)
@@ -69,5 +81,19 @@ action = jax.numpy.zeros(env.sys.nu)
 next_state = step_fn(state, action)
 
 # step_fn(reset_fn(jax.random.PRNGKey(0)))
+
+# mass matrix
+mjx.full_m(mjx_model, state.pipeline_state)
+
+# constraint jacobian
+state.pipeline_state._impl.efc_J
+
+# B matrix
+# test = mjx.step(mjx_model, state.pipeline_state)
+def step(action):
+    next_state = step_fn(state, action)
+    return next_state.pipeline_state.q
+next_state = jax.jacfwd(step)(action)
+
 
 pass
