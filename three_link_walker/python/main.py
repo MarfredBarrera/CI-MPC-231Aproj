@@ -63,7 +63,7 @@ def main():
     
     print("Running animation...")
     from animation import animate_three_link
-    animate_three_link(t_data, q_data)
+    animate_three_link(t_data, q_data, filename="three_link_walker_animation.gif")
 
 if __name__ == "__main__":
     main()

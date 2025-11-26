@@ -97,11 +97,15 @@ class ThreeLinkAnimator:
         
         return self.line_torso, self.line_leg1, self.line_leg2, self.pt_hip, self.pt_torso, self.pt_foot1, self.pt_foot2, self.time_text
 
-    def animate(self):
+    def animate(self, filename=None):
         ani = FuncAnimation(self.fig, self.update, frames=len(self.t_data),
                             init_func=self.init, blit=True, interval=1000/30) # 30 fps approx
-        plt.show()
+        if filename:
+            ani.save(filename, writer='pillow', fps=30)
+            print(f"Animation saved to {filename}")
+        else:
+            plt.show()
 
-def animate_three_link(t_data, q_data):
+def animate_three_link(t_data, q_data, filename=None):
     animator = ThreeLinkAnimator(t_data, q_data)
-    animator.animate()
+    animator.animate(filename)
