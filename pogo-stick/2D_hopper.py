@@ -53,7 +53,7 @@ def compute_common_terms(q, q_dot, u):
     b = b.at[0].set(b[0] + p_foot[1] / cfg.dt) 
     
     A = J @ M_inv @ J.T
-    return A, b, M_inv, J
+    return A, b, M_inv, J, B, h
 
 def solve_lcp_pgs(A, b):
     n = b.shape[0]
@@ -69,15 +69,15 @@ def step_dynamics_test(state, u):
     q, q_dot = state[:3], state[3:]
     u = jnp.clip(u, cfg.u_min, cfg.u_max)
     
-    A, b, M_inv, J = compute_common_terms(q, q_dot, u)
+    A, b, M_inv, J, B, h = compute_common_terms(q, q_dot, u)
     lambda_c = solve_lcp_pgs(A, b)
     
-    # Re-compute terms for integration
-    p_foot, _ = get_foot_kinematics(q, q_dot)
-    contact_mask = jax.nn.sigmoid(-100.0 * (p_foot[1] - 0.05))
-    s, c = jnp.sin(q[2]), jnp.cos(q[2])
-    B = jnp.array([[0.0, -s*contact_mask], [0.0, c*contact_mask], [1.0, 0.0]])
-    h = jnp.array([0.0, cfg.m*cfg.g, 0.0])
+    # # Re-compute terms for integration
+    # p_foot, _ = get_foot_kinematics(q, q_dot)
+    # contact_mask = jax.nn.sigmoid(-100.0 * (p_foot[1] - 0.05))
+    # s, c = jnp.sin(q[2]), jnp.cos(q[2])
+    # B = jnp.array([[0.0, -s*contact_mask], [0.0, c*contact_mask], [1.0, 0.0]])
+    # h = jnp.array([0.0, cfg.m*cfg.g, 0.0])
     
     forces = (-h + B @ u) * cfg.dt
     contact = J.T @ lambda_c
