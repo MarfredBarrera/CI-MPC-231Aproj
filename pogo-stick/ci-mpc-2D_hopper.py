@@ -429,7 +429,103 @@ def run_mpc_simulation(N_steps):
     _, (x_hist, u_hist) = jax.lax.scan(sim_step, init_carry, jnp.arange(N_steps))
     return x_hist, u_hist
 
+# ==========================================
+# 5. PLOTTING
+# ==========================================
 
+def plotter(x_data, u_data,filename="2D_hopper.png"):
+    target_vel = 1.0
+    target_h = 1.3
+
+    x_data = np.array(x_data)
+    u_data = np.array(u_data)
+
+    q = x_data[:, :3]
+    q_dot = x_data[:, 3:]
+    
+    # Helper function to get leg coordinates
+    def get_leg_coords(state):
+        x, y, th = state[:3]
+        foot_x = x + cfg.l * np.sin(th)
+        foot_y = y - cfg.l * np.cos(th)
+        return (x, y), (foot_x, foot_y)
+
+    # Get coordinates for all time steps
+    n = len(q)
+    hx = np.zeros(n)
+    hy = np.zeros(n)
+    fx = np.zeros(n)
+    fy = np.zeros(n)
+    
+    for i in range(n):
+        (hx[i], hy[i]), (fx[i], fy[i]) = get_leg_coords(x_data[i])
+
+    time = np.arange(x_data.shape[0]) * cfg.dt
+
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 12), gridspec_kw={'height_ratios': [1.25, 1]})
+
+    ax[0].plot(hx, hy,zorder=9)
+    ax[0].plot(fx, fy,zorder=9)
+    ax[0].set_xlabel('X Position (m)')
+    ax[0].set_ylabel('Y Position (m)')
+    ax[0].set_aspect('equal')  # Make aspect ratio equal
+    ax[0].grid(True, linestyle='--', alpha=0.3)    
+    ax[0].axhline(target_h, linestyle='--', color='red', linewidth=1, alpha=0.5, label='Target Height')
+    ax[0].axhline(0, color='black', linewidth=2)
+    ax[0].legend()
+
+
+    ax[0].set_xlim(-0.5, 2.5)
+    ax[0].set_ylim(0.0, 2.5)
+
+    # add hopper at certain intervals
+    for i in range(0, n, max(1, n // 5)):
+        circle = Circle((hx[i], hy[i]), 0.15, color='cornflowerblue',zorder=10)
+        ax[0].add_patch(circle)
+        ax[0].plot([hx[i], fx[i]], [hy[i], fy[i]], 'k-', linewidth=2)
+        ax[0].plot(fx[i], fy[i], 'ro', markersize=4)
+
+    # include final position
+    circle = Circle((hx[-1], hy[-1]), 0.15, color='cornflowerblue',zorder=10)
+    ax[0].add_patch(circle)
+    ax[0].plot([hx[-1], fx[-1]], [hy[-1], fy[-1]], 'k-', linewidth=2)
+    ax[0].plot(fx[-1], fy[-1], 'ro', markersize=4)
+
+
+
+    ax[1].set_xlim(0, len(u_data)*cfg.dt)
+    
+    # Dynamic Y limits with padding
+    f_min, f_max = np.min(u_data[:,1]), np.max(u_data[:,1])
+    y1_pad = (f_max - f_min) * 0.1 if f_max != f_min else 1.0
+    ax[1].set_ylim(f_min - y1_pad, f_max + y1_pad)
+
+    t_min, t_max = np.min(u_data[:,0]), np.max(u_data[:,0])
+    y2_pad = (t_max - t_min) * 0.1 if t_max != t_min else 1.0
+    
+    ax[1].set_xlabel('Time (s)')
+    ax[1].set_ylabel('Force Input (N)')
+    ax[1].grid(True, linestyle='--', alpha=0.3)
+
+    ax2 = ax[1].twinx()
+    ax2.set_ylabel('Torque Input (Nm)')
+    ax2.set_ylim(t_min - y2_pad, t_max + y2_pad*2.25)
+    ax[1].set_ylim(f_min - y1_pad, f_max + y1_pad*1.5)
+    
+    force_line, = ax[1].plot(time, u_data[:,1], 'b-', label='Force (N)')
+    torque_line, = ax2.plot(time, u_data[:,0], 'r-', label='Torque (Nm)')
+
+    # Combine legends from both axes
+    lines = [force_line, torque_line]
+    labels = [line.get_label() for line in lines]
+    ax[1].legend(lines, labels, loc='upper right')
+
+    plt.tight_layout()
+    plt.savefig("./figs/"+ filename)
+    plt.close()
+
+    return
 
 def animator(x_data, u_data, filename="2D_hopper.gif"):
     # Ensure data is numpy
@@ -444,12 +540,19 @@ def animator(x_data, u_data, filename="2D_hopper.gif"):
     ax.set_aspect('equal')
     ax.grid(True, linestyle='--', alpha=0.3)
     
+    # hopper
     ground_line = ax.axhline(0, color='black', linewidth=2)
     body_circle = Circle((0, 0), 0.15, color='cornflowerblue', zorder=10)
     ax.add_patch(body_circle)
     leg_line, = ax.plot([], [], 'k-', linewidth=4, zorder=5)
     foot_point, = ax.plot([], [], 'ro', markersize=6, zorder=6)
     trail, = ax.plot([], [], 'b:', linewidth=1, alpha=0.5)
+
+    # reference state
+    ref_circle = Circle((0, 0), 0.15, color='cornflowerblue', alpha=0.2, zorder=1)
+    ax.add_patch(ref_circle)
+    ref_leg_line, = ax.plot([], [], 'k--', linewidth=2, alpha=0.2, zorder=1)
+    ref_foot_point, = ax.plot([], [], 'ro', markersize=4, alpha=0.2, zorder=1)
     
     time_text = ax.text(0.05, 0.95, '', transform=ax.transAxes)
     force_text = ax.text(0.05, 0.90, '', transform=ax.transAxes)
@@ -488,19 +591,35 @@ def animator(x_data, u_data, filename="2D_hopper.gif"):
         return (x, y), (foot_x, foot_y)
 
     def update(frame):
+
+        target_vel = 1.0
+        target_h = 1.3
+
+
         state = x_data[frame]
+        ref_state = x_data[frame] +  target_vel * np.array([cfg.dt, 0.0, 0.0, target_vel, 0.0, 0.0])
+        ref_state[1] = target_h  # set height directly
+        ref_state[2] = 0.0 # set angle upright
         u = u_data[frame]
         
+        # hopper animation
         (hx, hy), (fx, fy) = get_leg_coords(state)
         
         body_circle.center = (hx, hy)
         leg_line.set_data([hx, fx], [hy, fy])
         
-        # Color leg red when applying force
-        force_intensity = np.clip(u[1] / 1000.0, 0, 1)
-        leg_line.set_color((force_intensity, 0, 0))
+        # # Color leg red when applying force
+        # force_intensity = np.clip(u[1] / 1000.0, 0, 1)
+        # leg_line.set_color((force_intensity, 0, 0))
         
         foot_point.set_data([fx], [fy])
+
+        # reference state animation
+        (rhx, rhy), (rfx, rfy) = get_leg_coords(ref_state)
+        ref_circle.center = (rhx, rhy)
+        ref_leg_line.set_data([rhx, rfx], [rhy-0.15, rfy])
+        ref_foot_point.set_data([rfx], [rfy])
+
         
         trail_len = 50
         start_idx = 0
@@ -520,7 +639,10 @@ def animator(x_data, u_data, filename="2D_hopper.gif"):
         torque_line.set_data(current_time, u_data[:frame+1, 0])
         force_line.set_data(current_time, u_data[:frame+1, 1])
         
-        return body_circle, leg_line, foot_point, trail, time_text, force_text, torque_line, force_line
+        return (body_circle, leg_line, foot_point, trail,   # hopper
+                time_text, force_text,  # text
+                torque_line, force_line, # input plotsinput plots
+                ref_circle, ref_leg_line, ref_foot_point) # reference hopper
 
     # Prevent overlap
     plt.tight_layout()
@@ -533,9 +655,7 @@ def animator(x_data, u_data, filename="2D_hopper.gif"):
     ani.save("./animations/"+ filename, writer='pillow', fps=30)
     print("Done.")
 
-# ==========================================
-# 5. EXECUTION & PLOT
-# ==========================================
+
 if __name__ == "__main__":
     import argparse
     
@@ -572,36 +692,9 @@ if __name__ == "__main__":
 
     if not args.no_animate:
         print("Generating animation...")
-        animator(x_data, u_data, filename=args.output)
+        # animator(x_data, u_data, filename=args.output)
+        plotter(x_data, u_data, filename="2D_hopper.png")
         print(f"Animation saved to {args.output}")
     else:
         print("Skipping animation (--no-animate flag set)")
-    
-    # # Plot 1: Trajectory
-    # plt.subplot(3, 1, 1)
-    # plt.title("2D Hopper MPC Trajectory")
-    # plt.plot(x_data[:, 0], x_data[:, 1], 'b-', label='Hip Path')
-    # plt.axhline(0, color='k', linewidth=2)
-    # plt.ylabel("Height (m)")
-    # plt.legend()
-    # plt.grid(True)
-    
-    # # Plot 2: States
-    # plt.subplot(3, 1, 2)
-    # plt.plot(t, x_data[:, 2], label="Theta (rad)")
-    # plt.plot(t, x_data[:, 3], label="Vel X (m/s)")
-    # plt.axhline(1.0, color='r', linestyle='--', label="Target Vel")
-    # plt.legend()
-    # plt.grid(True)
-    
-    # # Plot 3: Controls
-    # plt.subplot(3, 1, 3)
-    # plt.plot(t, u_data[:, 1], 'r', label="Force (N)")
-    # plt.plot(t, u_data[:, 0], 'g', label="Torque (Nm)")
-    # plt.xlabel("Time (s)")
-    # plt.legend()
-    # plt.grid(True)
-    
-    # plt.tight_layout()
-    # plt.savefig("cimpc_2d_result.png")
-    # print("Done. Saved plot to cimpc_2d_result.png")
+

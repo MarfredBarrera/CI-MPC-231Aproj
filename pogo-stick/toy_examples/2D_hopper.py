@@ -213,16 +213,17 @@ def animator(x_data, u_data, filename="2D_hopper.gif"):
         body_circle.center = (hx, hy)
         leg_line.set_data([hx, fx], [hy, fy])
         
-        # Color leg red when applying force
-        force_intensity = np.clip(u[1] / 1000.0, 0, 1)
-        leg_line.set_color((force_intensity, 0, 0))
+        # # Color leg red when applying force
+        # force_intensity = np.clip(u[1] / 1000.0, 0, 1)
+        # leg_line.set_color((force_intensity, 0, 0))
         
         foot_point.set_data([fx], [fy])
         
         trail_len = 50
         start_idx = 0
-
         # start_idx = max(0, frame - trail_len) # uncomment to limit trail length
+
+        
         trail.set_data(x_data[start_idx:frame+1, 0], x_data[start_idx:frame+1, 1])
         
         # Camera Tracking
