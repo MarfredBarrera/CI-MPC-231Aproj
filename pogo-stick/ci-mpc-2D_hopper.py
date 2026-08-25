@@ -28,7 +28,7 @@ class Config:
     dt = 0.02
     
     # Solver Parameters
-    rho = 1.0 # Constraint relaxation (smooths gradients)
+    rho = 0.0 # Constraint relaxation (smooths gradients)
     
     # Input Limits
     u_max = jnp.array([50.0, 1500.0]) # [Torque, Force]
@@ -82,7 +82,7 @@ def compute_common_terms(q, q_dot, u):
     p_foot, _ = get_foot_kinematics(q, q_dot)
     
     # Soft mask: 1.0 if on ground, 0.0 if in air
-    contact_mask = jax.nn.sigmoid(-100.0 * (p_foot[1] - 0.05))
+    contact_mask = jnp.where(p_foot[1] < 1e-3, 1.0, 0.0)
     
     s, c = jnp.sin(th), jnp.cos(th)
     
@@ -191,7 +191,7 @@ def step_cimpc(state, u):
     
     # Note: We need B again. 
     p_foot, _ = get_foot_kinematics(q, q_dot)
-    contact_mask = jax.nn.sigmoid(-100.0 * (p_foot[1] - 0.05))
+    contact_mask = jnp.where(p_foot[1] < 1e-3, 1.0, 0.0)
     s, c = jnp.sin(q[2]), jnp.cos(q[2])
     B = jnp.array([[0.0, -s*contact_mask], [0.0, c*contact_mask], [1.0, 0.0]])
     h = jnp.array([0.0, cfg.m*cfg.g, 0.0])
